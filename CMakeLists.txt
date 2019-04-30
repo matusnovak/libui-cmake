@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.4)
-project(libui)
+project(ui)
 
-option(BUILD_EXAMPLES "Build libui examples" ON)
-option(LIBUI_BUILD_SHARED_LIBS "Build shared libraries" ${BUILD_SHARED_LIBS})
+option(LIBUI_BUILD_EXAMPLES "Build libui examples" ON)
+option(LIBUI_BUILD_SHARED_LIBS "Build libui as a shared library" ${BUILD_SHARED_LIBS})
+
+if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
+  set(CMAKE_DEBUG_POSTFIX "_d")
+endif()
 
 file(GLOB_RECURSE COMMON_SOURCES ${CMAKE_SOURCE_DIR}/libui/common/*.c)
 file(GLOB_RECURSE COMMON_HEADERS ${CMAKE_SOURCE_DIR}/libui/common/*.h)
@@ -45,6 +49,7 @@ else()
 endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${LIBUI_HEADER};${LIBUI_PLATFORM_HEADER}")
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 
 if(WIN32)
   if(MSVC)
@@ -53,7 +58,8 @@ if(WIN32)
       target_link_options(${PROJECT_NAME} PRIVATE /MANIFEST:NO)
     endif()
   endif()
-  target_link_libraries(${PROJECT_NAME} D2d1 Dwrite windowscodecs UxTheme)
+  set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "lib")
+  target_link_libraries(${PROJECT_NAME} D2d1 Dwrite windowscodecs UxTheme Comctl32)
 elseif(APPLE)
   find_library(FOUNDATION_LIBRARY Foundation)
   find_library(COCOA_LIBRARY Cocoa)
@@ -71,7 +77,7 @@ else()
   )
 endif()
 
-if(BUILD_EXAMPLES)
+if(LIBUI_BUILD_EXAMPLES)
   set(EXAMPLES controlgallery datetime drawtext histogram timer)
   foreach(EXAMPLE ${EXAMPLES})
     file(GLOB EXAMPLE_SOURCES ${CMAKE_SOURCE_DIR}/libui/examples/${EXAMPLE}/main.*)
@@ -84,11 +90,14 @@ if(BUILD_EXAMPLES)
     target_include_directories(${EXAMPLE} PRIVATE ${CMAKE_SOURCE_DIR}/libui)
     target_link_libraries(${EXAMPLE} ${PROJECT_NAME})
     add_dependencies(${EXAMPLE} ${PROJECT_NAME})
+    set_target_properties(${EXAMPLE} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
     
     if(WIN32)
       if(NOT LIBUI_BUILD_SHARED_LIBS)
-        target_link_libraries(${EXAMPLE} D2d1 Dwrite windowscodecs UxTheme)
-        target_link_options(${EXAMPLE} PRIVATE /MANIFEST:NO)
+        target_link_libraries(${EXAMPLE} D2d1 Dwrite windowscodecs UxTheme Comctl32)
+        if(MSVC)
+          target_link_options(${EXAMPLE} PRIVATE /MANIFEST:NO)
+        endif()
       endif()
     elseif(APPLE)
       target_link_libraries(${EXAMPLE}
@@ -107,9 +116,21 @@ if(BUILD_EXAMPLES)
 endif()
 
 install(TARGETS ${PROJECT_NAME}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
   COMPONENT library
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libui
+  PUBLIC_HEADER DESTINATION include/libui
 )
+
+if(WIN32)
+    set(CPACK_GENERATOR "NSIS")
+    set(CPACK_SOURCE_GENERATOR "ZIP")
+elseif(APPLE)
+    set(CPACK_GENERATOR "PackageMake")
+else()
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_SOURCE_GENERATOR "TGZ")
+endif()
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Matus Novak")
+include(CPack)
