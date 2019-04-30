@@ -20,6 +20,8 @@ matrix:
 
 before_script:
   - git submodule update --init
+  - if [ $TRAVIS_OS_NAME == linux ]; then sudo apt-get update; fi
+  - if [ $TRAVIS_OS_NAME == linux ]; then sudo apt-get install build-essential libgtk-3-dev -y; fi
 
 script:
   - if [ $TRAVIS_OS_NAME == linux ]; then sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-7 /usr/bin/gcc; fi

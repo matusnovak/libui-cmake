@@ -15,6 +15,8 @@ compile_gcc: &compile_gcc
           ln -s $DIR/cmake-3.10.2-Linux-x86_64/bin/cmake /usr/bin/cmake
           ln -s $DIR/cmake-3.10.2-Linux-x86_64/bin/cpack /usr/bin/cpack
           ln -s $DIR/cmake-3.10.2-Linux-x86_64/bin/ctest /usr/bin/ctest
+          sudo apt-get update
+          sudo apt-get install build-essential libgtk-3-dev -y
 
     - run:
         name: Submodules
