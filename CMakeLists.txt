@@ -17,7 +17,6 @@ file(GLOB_RECURSE WINDOWS_HEADERS ${CMAKE_SOURCE_DIR}/libui/windows/*.hpp)
 file(GLOB_RECURSE DARWIN_SOURCES ${CMAKE_SOURCE_DIR}/libui/darwin/*.m)
 file(GLOB_RECURSE DARWIN_HEADERS ${CMAKE_SOURCE_DIR}/libui/darwin/*.h)
 set(TO_REMOVE ${CMAKE_SOURCE_DIR}/libui/common/OLD_table.c)
-set(MANIFEST ${CMAKE_SOURCE_DIR}/libui/windows/libui.manifest)
 
 if(WIN32)
   set(SOURCES ${COMMON_SOURCES} ${WINDOWS_SOURCES})
@@ -55,7 +54,8 @@ if(WIN32)
   if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
     if(LIBUI_BUILD_SHARED_LIBS)
-      target_link_options(${PROJECT_NAME} PRIVATE /MANIFEST:NO)
+      #target_link_options(${PROJECT_NAME} PRIVATE /MANIFEST:NO)
+      set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFEST:NO")
     endif()
   endif()
   set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "lib")
@@ -63,10 +63,12 @@ if(WIN32)
 elseif(APPLE)
   find_library(FOUNDATION_LIBRARY Foundation)
   find_library(COCOA_LIBRARY Cocoa)
-  target_link_libraries(${PROJECT_NAME}
-    ${FOUNDATION_LIBRARY}
-    ${COCOA_LIBRARY}
-  )
+  if(LIBUI_BUILD_SHARED_LIBS)
+    target_link_libraries(${PROJECT_NAME}
+      ${FOUNDATION_LIBRARY}
+      ${COCOA_LIBRARY}
+    )
+  endif()
 else()
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
@@ -75,6 +77,14 @@ else()
     ${GTK3_INCLUDE_DIRS}
     ${GLIB_INCLUDE_DIRS}
   )
+  if(LIBUI_BUILD_SHARED_LIBS)
+    target_link_libraries(${PROJECT_NAME} 
+      ${GTK3_LIBRARIES} 
+      ${GLIB_LDFLAGS} 
+      ${CMAKE_DL_LIBS}
+      m
+    )
+  endif()
 endif()
 
 if(LIBUI_BUILD_EXAMPLES)
@@ -96,21 +106,26 @@ if(LIBUI_BUILD_EXAMPLES)
       if(NOT LIBUI_BUILD_SHARED_LIBS)
         target_link_libraries(${EXAMPLE} D2d1 Dwrite windowscodecs UxTheme Comctl32)
         if(MSVC)
-          target_link_options(${EXAMPLE} PRIVATE /MANIFEST:NO)
+          #target_link_options(${EXAMPLE} PRIVATE /MANIFEST:NO)
+          set_target_properties(${EXAMPLE} PROPERTIES LINK_FLAGS "/MANIFEST:NO")
         endif()
       endif()
     elseif(APPLE)
-      target_link_libraries(${EXAMPLE}
-        ${FOUNDATION_LIBRARY}
-        ${COCOA_LIBRARY}
-      )
+      if(NOT LIBUI_BUILD_SHARED_LIBS)
+        target_link_libraries(${EXAMPLE}
+          ${FOUNDATION_LIBRARY}
+          ${COCOA_LIBRARY}
+        )
+      endif()
     else()
-      target_link_libraries(${EXAMPLE} 
-        ${GTK3_LIBRARIES} 
-        ${GLIB_LDFLAGS} 
-        ${CMAKE_DL_LIBS}
-        m
-      )
+      if(NOT LIBUI_BUILD_SHARED_LIBS)
+        target_link_libraries(${EXAMPLE} 
+          ${GTK3_LIBRARIES} 
+          ${GLIB_LDFLAGS} 
+          ${CMAKE_DL_LIBS}
+          m
+        )
+      endif()
     endif()
   endforeach()
 endif()
