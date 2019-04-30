@@ -1,0 +1,71 @@
+compile_gcc: &compile_gcc
+  steps:
+    - checkout
+    - run:
+        name: Dependencies
+        command: |
+          wget https://cmake.org/files/v3.10/cmake-3.10.2-Linux-x86_64.tar.gz
+          tar -xvzf cmake-3.10.2-Linux-x86_64.tar.gz
+          chmod +x ./cmake-3.10.2-Linux-x86_64/bin/ccmake
+          chmod +x ./cmake-3.10.2-Linux-x86_64/bin/cmake
+          chmod +x ./cmake-3.10.2-Linux-x86_64/bin/cpack
+          chmod +x ./cmake-3.10.2-Linux-x86_64/bin/ctest
+          DIR=$(pwd)
+          ln -s $DIR/cmake-3.10.2-Linux-x86_64/bin/ccmake /usr/bin/ccmake
+          ln -s $DIR/cmake-3.10.2-Linux-x86_64/bin/cmake /usr/bin/cmake
+          ln -s $DIR/cmake-3.10.2-Linux-x86_64/bin/cpack /usr/bin/cpack
+          ln -s $DIR/cmake-3.10.2-Linux-x86_64/bin/ctest /usr/bin/ctest
+
+    - run:
+        name: Submodules
+        command: |
+          git submodule update --init
+
+    - run:
+        name: Build
+        command: |
+          mkdir build
+          cd build
+          cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel
+          cmake --build .
+
+version: 2
+jobs:
+  compile_gcc_550:
+    <<: *compile_gcc
+
+    docker:
+      - image: gcc:5.5.0
+
+  compile_gcc_640:
+    <<: *compile_gcc
+
+    docker:
+      - image: gcc:6.4.0
+  
+  compile_gcc_730:
+    <<: *compile_gcc
+
+    docker:
+      - image: gcc:7.3.0
+
+  compile_gcc_820:
+    <<: *compile_gcc
+
+    docker:
+      - image: gcc:8.2.0
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - compile_gcc_550
+      - compile_gcc_640:
+          requires:
+            - compile_gcc_550
+      - compile_gcc_730:
+          requires:
+            - compile_gcc_640
+      - compile_gcc_820:
+          requires:
+            - compile_gcc_730

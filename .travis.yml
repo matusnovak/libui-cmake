@@ -1,0 +1,41 @@
+language: cpp
+matrix:
+  include:
+  - os: linux
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - g++-7
+          - cmake
+  - os: osx
+    osx_image: xcode8
+    addons:
+      apt:
+        packages:
+          - cmake
+    env:
+      - MATRIX_EVAL="brew install gcc && CC=gcc-7 && CXX=g++-7"
+
+before_script:
+  - git submodule update --init
+
+script:
+  - if [ $TRAVIS_OS_NAME == linux ]; then sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-7 /usr/bin/gcc; fi
+  - if [ $TRAVIS_OS_NAME == linux ]; then sudo unlink /usr/bin/g++ && sudo ln -s /usr/bin/g++-7 /usr/bin/g++; fi
+  - mkdir build
+  - cd build
+  - cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel || travis_terminate 1
+  - cmake --build . || travis_terminate 1
+
+branches:
+  only:
+  - master
+  - devel
+notifications:
+  email:
+    recipients:
+    - matusnov@gmail.com
+  on_success: always
+  on_failure: always
