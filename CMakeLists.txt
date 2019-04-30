@@ -15,6 +15,8 @@ file(GLOB_RECURSE UNIX_SOURCES ${CMAKE_SOURCE_DIR}/libui/unix/*.c)
 file(GLOB_RECURSE UNIX_HEADERS ${CMAKE_SOURCE_DIR}/libui/unix/*.h)
 file(GLOB_RECURSE WINDOWS_SOURCES ${CMAKE_SOURCE_DIR}/libui/windows/*.c)
 file(GLOB_RECURSE WINDOWS_HEADERS ${CMAKE_SOURCE_DIR}/libui/windows/*.h)
+file(GLOB_RECURSE DARWIN_SOURCES ${CMAKE_SOURCE_DIR}/libui/darwin/*.m)
+file(GLOB_RECURSE DARWIN_HEADERS ${CMAKE_SOURCE_DIR}/libui/darwin/*.h)
 set(TO_REMOVE ${CMAKE_SOURCE_DIR}/libui/common/OLD_table.c)
 
 if(UNIX)
@@ -24,6 +26,10 @@ if(UNIX)
 elseif(WIN32)
   set(SOURCES ${COMMON_SOURCES} ${WINDOWS_SOURCES})
   set(HEADERS ${COMMON_HEADERS} ${WINDOWS_HEADERS})
+elseif(APPLE)
+  set(TO_REMOVE ${TO_REMOVE} ${CMAKE_SOURCE_DIR}/libui/darwin/OLD_table.m)
+  set(SOURCES ${COMMON_SOURCES} ${DARWIN_SOURCES})
+  set(HEADERS ${COMMON_HEADERS} ${DARWIN_HEADERS})
 endif()
 
 foreach(ITEM ${TO_REMOVE})
@@ -32,6 +38,7 @@ endforeach()
 
 if(LIBUI_BUILD_SHARED_LIBS)
   add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
+  add_compile_definitions(${PROJECT_NAME} PRIVATE libui_EXPORTS=1)
 else()
   add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
 endif()
@@ -39,7 +46,7 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)
 
 if(UNIX)
-  find_package (PkgConfig REQUIRED)
+  find_package(PkgConfig REQUIRED)
   pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
   pkg_search_module(GLIB REQUIRED glib-2.0)
   target_include_directories(${PROJECT_NAME} PRIVATE 
@@ -47,7 +54,14 @@ if(UNIX)
     ${GLIB_INCLUDE_DIRS}
   )
 elseif(WIN32)
-  target_compile_options(${PROJECT_NAME} /bigobj)
+  target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+elseif(APPLE)
+  find_library(FOUNDATION_LIBRARY Foundation)
+  find_library(COCOA_LIBRARY Cocoa)
+  target_link_libraries(${PROJECT_NAME}
+    ${FOUNDATION_LIBRARY}
+    ${COCOA_LIBRARY}
+  )
 endif()
 
 if(BUILD_EXAMPLES)
@@ -67,7 +81,12 @@ if(BUILD_EXAMPLES)
         m
       )
     elseif(WIN32)
-      target_compile_options(${EXAMPLE} /bigobj)
+      target_compile_options(${EXAMPLE} PRIVATE /bigobj)
+    elseif(APPLE)
+      target_link_libraries(${EXAMPLE}
+        ${FOUNDATION_LIBRARY}
+        ${COCOA_LIBRARY}
+      )
     endif()
   endforeach()
 endif()
