@@ -39,35 +39,35 @@ jobs:
     docker:
       - image: gcc:5.5.0
 
-  compile_gcc_640:
+  compile_gcc_650:
     <<: *compile_gcc
 
     docker:
-      - image: gcc:6.4.0
+      - image: gcc:6.5.0
   
-  compile_gcc_730:
+  compile_gcc_740:
     <<: *compile_gcc
 
     docker:
-      - image: gcc:7.3.0
+      - image: gcc:7.4.0
 
-  compile_gcc_820:
+  compile_gcc_830:
     <<: *compile_gcc
 
     docker:
-      - image: gcc:8.2.0
+      - image: gcc:8.3.0
 
 workflows:
   version: 2
   build_and_test:
     jobs:
       - compile_gcc_550
-      - compile_gcc_640:
+      - compile_gcc_650:
           requires:
             - compile_gcc_550
-      - compile_gcc_730:
+      - compile_gcc_740:
           requires:
-            - compile_gcc_640
-      - compile_gcc_820:
+            - compile_gcc_650
+      - compile_gcc_830:
           requires:
-            - compile_gcc_730
+            - compile_gcc_740
